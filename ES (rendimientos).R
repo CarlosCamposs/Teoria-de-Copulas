@@ -5,17 +5,17 @@
 library(quantmod)
 
 # Cargamos la serie de datos
-cartera=c("TSLA","AAPL")
+cartera=c("WALMEX.MX","KOFUBL.MX")
 getSymbols(cartera,src = "yahoo",from="2020-01-01")
 
 
 # Guardamos en unas variables los precios de cierre
-p_TSLA<-TSLA$TSLA.Close
-p_AAPL<-AAPL$AAPL.Close
+p_WALMEX<-WALMEX.MX$WALMEX.MX.Close
+p_FEMSA<-KOFUBL.MX$KOFUBL.MX.Close
 
 # Creamos una tabla donde juntamos ambos precios de cierre
-tabla_precios<-cbind(p_TSLA,p_AAPL)
-colnames(tabla_precios)<-c("TSLA","AAPL")
+tabla_precios<-cbind(p_WALMEX,p_FEMSA)
+colnames(tabla_precios)<-c("WALMEX","FEMSA")
 
 
 # Definimos la tabla como un dataframe
@@ -26,14 +26,14 @@ tabla_precios<-as.data.frame(tabla_precios)
 tabla_rendimientos<-data.frame()
 for(i in 1:2){
   
-  for (j in 1:length(tabla_precios$TSLA)){
+  for (j in 1:length(tabla_precios$WALMEX)){
     tabla_rendimientos[j,i]<-tabla_precios[j+1,i]/tabla_precios[j,i]-1
   }  
 } 
 
 
 # Cambiamos el nombre de las columnas al dataframe   
-colnames(tabla_rendimientos)<-c("TSLA","AAPL")
+colnames(tabla_rendimientos)<-c("WALMEX","FEMSA")
 
 
 # Eliminamos la ultima observacion pues es un dato NA  
@@ -57,7 +57,7 @@ for(i in 1:2){
   
 }
 
-colnames(tabla_revaluacion)<-c("TSLA","AAPL")
+colnames(tabla_revaluacion)<-c("WALMEX","FEMSA")
 
 #######################
 # P&L individual
@@ -76,7 +76,7 @@ for (i in 1:2){
   
 }  
 
-hist(PL_Portafolio$AAPL)
+hist(PL_Portafolio$WALMEX)
 
 
 # https://cran.r-project.org/web/views/Distributions.html#Continuous
@@ -91,34 +91,34 @@ library(univariateML)
 
 ############################################################################################
 # Buscamos que distribucion de probabilidad se ajusta a los rendimientos de TSLA
-  hist(tabla_rendimientos$TSLA)
+  hist(tabla_rendimientos$WALMEX)
   
-  fit.cont(tabla_rendimientos$TSLA)  
+  fit.cont(tabla_rendimientos$WALMEX)  
       # Logistica
 
 # Hallamos los parametros de la distribucion logistica  
-  m1<-model_select(tabla_rendimientos$TSLA,models="logis",criterion="aic")
-  coef(m1) # Log-likelihod -2565
+  m1<-model_select(tabla_rendimientos$WALMEX,models="logis",criterion="aic")
+  coef(m1) 
 
 #####
 # Una mejor distribucion que se ajusta: Laplace
-  mod_TSLA<-model_select(tabla_rendimientos$TSLA,criterion="aic")
-  mod_TSLA
+#  mod_TSLA<-model_select(tabla_rendimientos$TSLA,criterion="aic")
+#  mod_TSLA
 
 library(VGAM)
 
 # Calculamos los valores de u1 con la distribucion logistica
-  u1<-plogis(tabla_rendimientos$TSLA,location=coef(m1)[1],scale=coef(m1)[2])
+  u1<-plogis(tabla_rendimientos$WALMEX,location=coef(m1)[1],scale=coef(m1)[2])
 
 ############################################################################################
 # Buscamos que distribucion de probabilidad se ajusta a los rendimientos de AAPL
-  hist(tabla_rendimientos$AAPL)
-  fit.cont(tabla_rendimientos$AAPL)  
+  hist(tabla_rendimientos$FEMSA)
+  fit.cont(tabla_rendimientos$FEMSA)  
   # Logistica
   
 
 # Hallamos los parametros de la distribucion logistica  
-  m2<-model_select(tabla_rendimientos$AAPL,models="logis",criterion="aic")
+  m2<-model_select(tabla_rendimientos$FEMSA,models="logis",criterion="aic")
   coef(m2) 
   
 #####
@@ -129,7 +129,7 @@ library(VGAM)
 library(VGAM)
   
 # Calculamos los valores de u2 con la distribucion logistica
-  u2<-plogis(tabla_rendimientos$AAPL,location=coef(m2)[1],scale=coef(m2)[2])
+  u2<-plogis(tabla_rendimientos$FEMSA,location=coef(m2)[1],scale=coef(m2)[2])
   
 
 ##############################################
@@ -142,23 +142,23 @@ library(VGAM)
   library(VineCopula)
   
   BiCopSelect(u1,u2,familyset=NA,selectioncrit = "AIC")
-  # Survival Gumbel, con datos de distribuciones logisticas
-  # par=1.57, tau=0.36
+  # Survival Gumbel
+  # par=1.15, tau=0.13
   
   
 ############################### Para checar dependencia
   library(lcopula)
   
-  cor.test(x=tabla_rendimientos$TSLA,
-           y=tabla_rendimientos$AAPL,method = "spearman")
+  cor.test(x=tabla_rendimientos$WALMEX,
+           y=tabla_rendimientos$FEMSA,method = "spearman")
   
-  valores<-cbind(tabla_rendimientos$TSLA,tabla_rendimientos$AAPL)
+  valores<-cbind(tabla_rendimientos$WALMEX,tabla_rendimientos$FEMSA)
   K.plot(valores)
   
 ############################### Construccion de la copula
   library(VC2copula)
   
-  copula<-surGumbelCopula(param = 1.57)
+  copula<-surGumbelCopula(param = 1.15)
   
 
 ############################### Construccion de la funcion de distribucion conjunta
